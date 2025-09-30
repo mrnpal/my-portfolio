@@ -1,0 +1,1236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Portfolio - Creative Developer</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Three.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Space+Grotesk:wght@400;700&display=swap" rel="stylesheet">
+    
+    <style>
+        /* CSS Variables for theme switching */
+        :root {
+            --bg-primary: #0a0a0a;
+            --bg-secondary: rgba(255, 255, 255, 0.05);
+            --bg-tertiary: #111111;
+            --text-primary: #ffffff;
+            --text-secondary: #9ca3af;
+            --accent: #9333ea;
+            --accent-secondary: #ec4899;
+            --glass-bg: rgba(255, 255, 255, 0.05);
+            --glass-border: rgba(255, 255, 255, 0.1);
+            --nav-bg: rgba(10, 10, 10, 0.8);
+            --section-bg: rgba(17, 17, 17, 0.5);
+            --skill-bg: #374151;
+            --scrollbar-track: rgba(255, 255, 255, 0.1);
+            --scrollbar-thumb: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --particle-color: #9333ea;
+            --grid-color: #9333ea;
+        }
+
+        /* Light mode variables */
+        body.light-mode {
+            --bg-primary: #ffffff;
+            --bg-secondary: rgba(0, 0, 0, 0.05);
+            --bg-tertiary: #f3f4f6;
+            --text-primary: #0a0a0a;
+            --text-secondary: #4b5563;
+            --accent: #7c3aed;
+            --accent-secondary: #db2777;
+            --glass-bg: rgba(0, 0, 0, 0.05);
+            --glass-border: rgba(0, 0, 0, 0.1);
+            --nav-bg: rgba(255, 255, 255, 0.8);
+            --section-bg: rgba(243, 244, 246, 0.5);
+            --skill-bg: #e5e7eb;
+            --scrollbar-track: rgba(0, 0, 0, 0.1);
+            --scrollbar-thumb: linear-gradient(135deg, #7c3aed 0%, #db2777 100%);
+            --particle-color: #7c3aed;
+            --grid-color: #7c3aed;
+        }
+
+        /* Apply theme variables */
+        body {
+            font-family: 'Inter', sans-serif;
+            overflow-x: hidden;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+        
+        .font-space {
+            font-family: 'Space Grotesk', sans-serif;
+        }
+        
+        /* 3D Canvas background */
+        #canvas-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+        }
+        
+        /* Glass morphism effect */
+        .glass {
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+            transition: all 0.3s ease;
+        }
+        
+        /* Neon glow effect */
+        .neon-glow {
+            text-shadow: 0 0 10px rgba(147, 51, 234, 0.8),
+                         0 0 20px rgba(147, 51, 234, 0.6),
+                         0 0 30px rgba(147, 51, 234, 0.4);
+        }
+        
+        /* 3D Card flip effect */
+        .card-3d {
+            perspective: 1000px;
+            transform-style: preserve-3d;
+        }
+        
+        .card-3d-inner {
+            transition: transform 0.6s;
+            transform-style: preserve-3d;
+        }
+        
+        .card-3d:hover .card-3d-inner {
+            transform: rotateY(180deg);
+        }
+        
+        .card-3d-front, .card-3d-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+        }
+        
+        .card-3d-back {
+            transform: rotateY(180deg);
+        }
+        
+        /* Floating animation */
+        @keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-20px); }
+        }
+        
+        .float-animation {
+            animation: float 3s ease-in-out infinite;
+        }
+        
+        /* Gradient text */
+        .gradient-text {
+            background: linear-gradient(135deg, var(--accent) 0%, var(--accent-secondary) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        /* Scroll animations */
+        .fade-in {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: all 0.8s ease-out;
+        }
+        
+        .fade-in.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        /* Skill bar animation */
+        .skill-bar {
+            transform: scaleX(0);
+            transform-origin: left;
+            transition: transform 1.5s ease-out;
+        }
+        
+        .skill-bar.animate {
+            transform: scaleX(1);
+        }
+        
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: var(--scrollbar-track);
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: var(--scrollbar-thumb);
+            border-radius: 4px;
+        }
+        
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .hero-title {
+                font-size: 2rem !important;
+                line-height: 1.2 !important;
+            }
+            
+            .hero-subtitle {
+                font-size: 1rem !important;
+                line-height: 1.5 !important;
+            }
+            
+            .hero-buttons {
+                flex-direction: column !important;
+                width: 100% !important;
+                max-width: 300px !important;
+                margin: 0 auto !important;
+            }
+            
+            .hero-buttons button {
+                width: 100% !important;
+            }
+            
+            .typing-text {
+                white-space: normal !important;
+                border-right: none !important;
+                animation: none !important;
+                opacity: 1 !important;
+                width: 100% !important;
+            }
+        }
+        
+        /* Typing animation */
+        .typing-text {
+            overflow: hidden;
+            white-space: nowrap;
+            border-right: 3px solid var(--accent);
+            animation: typing 3.5s steps(40, end), blink-caret 0.75s step-end infinite;
+        }
+        
+        @keyframes typing {
+            from { width: 0 }
+            to { width: 100% }
+        }
+        
+        @keyframes blink-caret {
+            from, to { border-color: transparent }
+            50% { border-color: var(--accent); }
+        }
+        
+        /* Pulse animation */
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.05); opacity: 0.7; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        
+        .pulse-animation {
+            animation: pulse 2s infinite;
+        }
+        
+        /* Wave animation */
+        @keyframes wave {
+            0% { transform: rotate(0deg); }
+            25% { transform: rotate(20deg); }
+            50% { transform: rotate(0deg); }
+            75% { transform: rotate(-20deg); }
+            100% { transform: rotate(0deg); }
+        }
+        
+        .wave-animation {
+            animation: wave 2s infinite;
+            display: inline-block;
+        }
+        
+        /* Skill icon floating animation */
+        @keyframes float-icon {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-15px) rotate(5deg); }
+        }
+        
+        .float-icon {
+            animation: float-icon 4s ease-in-out infinite;
+        }
+        
+        .float-icon:nth-child(2n) {
+            animation-delay: 0.5s;
+            animation-duration: 3.5s;
+        }
+        
+        .float-icon:nth-child(3n) {
+            animation-delay: 1s;
+            animation-duration: 4.5s;
+        }
+        
+        /* Glitch effect */
+        @keyframes glitch {
+            0% { text-shadow: 0.05em 0 0 rgba(255, 0, 0, 0.75), -0.05em -0.025em 0 rgba(0, 255, 0, 0.75), -0.025em 0.05em 0 rgba(0, 0, 255, 0.75); }
+            14% { text-shadow: 0.05em 0 0 rgba(255, 0, 0, 0.75), -0.05em -0.025em 0 rgba(0, 255, 0, 0.75), -0.025em 0.05em 0 rgba(0, 0, 255, 0.75); }
+            15% { text-shadow: -0.05em -0.025em 0 rgba(255, 0, 0, 0.75), 0.025em 0.025em 0 rgba(0, 255, 0, 0.75), -0.05em -0.05em 0 rgba(0, 0, 255, 0.75); }
+            49% { text-shadow: -0.05em -0.025em 0 rgba(255, 0, 0, 0.75), 0.025em 0.025em 0 rgba(0, 255, 0, 0.75), -0.05em -0.05em 0 rgba(0, 0, 255, 0.75); }
+            50% { text-shadow: 0.025em 0.05em 0 rgba(255, 0, 0, 0.75), 0.05em 0 0 rgba(0, 255, 0, 0.75), 0 -0.05em 0 rgba(0, 0, 255, 0.75); }
+            99% { text-shadow: 0.025em 0.05em 0 rgba(255, 0, 0, 0.75), 0.05em 0 0 rgba(0, 255, 0, 0.75), 0 -0.05em 0 rgba(0, 0, 255, 0.75); }
+            100% { text-shadow: -0.025em 0 0 rgba(255, 0, 0, 0.75), -0.025em -0.025em 0 rgba(0, 255, 0, 0.75), -0.025em -0.05em 0 rgba(0, 0, 255, 0.75); }
+        }
+        
+        .glitch-effect {
+            animation: glitch 5s infinite;
+        }
+        
+        /* Loading screen */
+        .loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--bg-primary);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            transition: opacity 0.5s ease-out;
+        }
+        
+        .loading-screen.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        
+        .loader {
+            width: 100px;
+            height: 100px;
+            border: 5px solid rgba(147, 51, 234, 0.2);
+            border-radius: 50%;
+            border-top-color: var(--accent);
+            animation: spin 1s ease-in-out infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        /* Particle trail */
+        .particle {
+            position: fixed;
+            pointer-events: none;
+            opacity: 0;
+            border-radius: 50%;
+            background: var(--accent);
+            z-index: 99;
+            animation: particleFade 1s ease-out forwards;
+        }
+        
+        @keyframes particleFade {
+            0% { transform: translate(0, 0); opacity: 1; }
+            100% { transform: translate(var(--tx), var(--ty)); opacity: 0; }
+        }
+        
+        /* Tilt effect */
+        .tilt-effect {
+            transition: transform 0.3s ease-out;
+        }
+        
+        /* Shake animation for form */
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+            20%, 40%, 60%, 80% { transform: translateX(5px); }
+        }
+        
+        .shake {
+            animation: shake 0.5s;
+        }
+        
+        /* Section separator */
+        .section-separator {
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--accent), transparent);
+            margin: 4rem 0;
+        }
+        
+        /* Theme toggle button */
+        .theme-toggle {
+            position: relative;
+            width: 60px;
+            height: 30px;
+            background: var(--glass-bg);
+            border: 1px solid var(--glass-border);
+            border-radius: 30px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .theme-toggle-slider {
+            position: absolute;
+            top: 3px;
+            left: 3px;
+            width: 24px;
+            height: 24px;
+            background: var(--accent);
+            border-radius: 50%;
+            transition: transform 0.3s ease;
+        }
+        
+        body.light-mode .theme-toggle-slider {
+            transform: translateX(30px);
+        }
+        
+        /* Apply theme to specific elements */
+        .bg-gray-900 {
+            background-color: var(--bg-tertiary);
+        }
+        
+        .bg-gray-800 {
+            background-color: var(--skill-bg);
+        }
+        
+        .text-gray-300 {
+            color: var(--text-secondary);
+        }
+        
+        .text-gray-500 {
+            color: var(--text-secondary);
+        }
+        
+        .text-gray-400 {
+            color: var(--text-secondary);
+        }
+        
+        .border-gray-800 {
+            border-color: var(--glass-border);
+        }
+        
+        /* Update navigation background */
+        nav {
+            background: var(--nav-bg);
+        }
+        
+        /* Update section backgrounds */
+        #projects, #contact {
+            background: var(--section-bg);
+        }
+        
+        /* Update skill bars background */
+        .skill-bar {
+            background: linear-gradient(135deg, var(--accent) 0%, var(--accent-secondary) 100%);
+        }
+        
+        /* Mobile-specific hero improvements */
+        @media (max-width: 640px) {
+            #hero {
+                padding-top: 100px;
+                padding-bottom: 60px;
+            }
+            
+            .hero-content {
+                padding: 0 1rem;
+            }
+            
+            .hero-title {
+                font-size: 2rem !important;
+                margin-bottom: 1rem !important;
+            }
+            
+            .hero-subtitle {
+                font-size: 1rem !important;
+                margin-bottom: 2rem !important;
+                padding: 0 1rem;
+            }
+            
+            .hero-buttons {
+                gap: 1rem !important;
+            }
+            
+            .hero-buttons button {
+                padding: 0.75rem 1.5rem !important;
+                font-size: 0.9rem !important;
+            }
+            
+            .scroll-indicator {
+                bottom: 2rem !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading Screen -->
+    <div id="loading-screen" class="loading-screen">
+        <div class="loader"></div>
+        <p class="mt-4 text-lg">Loading amazing experience...</p>
+    </div>
+    
+    <!-- 3D Canvas Container -->
+    <div id="canvas-container"></div>
+    
+    <!-- Navigation -->
+    <nav class="fixed top-0 w-full z-50 glass px-6 py-4">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <div class="font-space text-2xl font-bold gradient-text">Portfolio</div>
+            <div class="hidden md:flex items-center space-x-8">
+                <a href="#hero" class="hover:text-purple-400 transition-colors">Home</a>
+                <a href="#about" class="hover:text-purple-400 transition-colors">About</a>
+                <a href="#projects" class="hover:text-purple-400 transition-colors">Projects</a>
+                <a href="#skills" class="hover:text-purple-400 transition-colors">Skills</a>
+                <a href="#contact" class="hover:text-purple-400 transition-colors">Contact</a>
+                <div class="theme-toggle" id="theme-toggle">
+                    <div class="theme-toggle-slider"></div>
+                </div>
+            </div>
+            <div class="flex items-center space-x-4 md:hidden">
+                <div class="theme-toggle" id="theme-toggle-mobile">
+                    <div class="theme-toggle-slider"></div>
+                </div>
+                <button id="mobile-menu-btn">
+                    <i class="fas fa-bars text-2xl"></i>
+                </button>
+            </div>
+        </div>
+    </nav>
+    
+    <!-- Mobile Menu -->
+    <div id="mobile-menu" class="fixed inset-0 bg-black bg-opacity-95 z-40 hidden">
+        <div class="flex flex-col items-center justify-center h-full space-y-8 text-2xl">
+            <a href="#hero" class="mobile-link hover:text-purple-400 transition-colors">Home</a>
+            <a href="#about" class="mobile-link hover:text-purple-400 transition-colors">About</a>
+            <a href="#projects" class="mobile-link hover:text-purple-400 transition-colors">Projects</a>
+            <a href="#skills" class="mobile-link hover:text-purple-400 transition-colors">Skills</a>
+            <a href="#contact" class="mobile-link hover:text-purple-400 transition-colors">Contact</a>
+        </div>
+    </div>
+    
+    <!-- Hero Section -->
+    <section id="hero" class="min-h-screen flex items-center justify-center relative">
+        <div class="hero-content text-center z-10 px-6">
+            <h1 class="hero-title font-space text-6xl md:text-8xl font-bold mb-6 neon-glow glitch-effect">
+                Creative Developer
+            </h1>
+            <p class="hero-subtitle text-xl md:text-2xl mb-8 text-gray-300 typing-text">
+                Crafting immersive digital experiences with cutting-edge technology
+            </p>
+            <div class="hero-buttons flex flex-col sm:flex-row gap-4 justify-center">
+                <button class="px-8 py-3 bg-gradient-to-r from-purple-600 to-pink-600 rounded-full font-semibold hover:scale-105 transition-transform pulse-animation">
+                    View Projects
+                </button>
+                <button class="px-8 py-3 glass rounded-full font-semibold hover:bg-purple-600 hover:bg-opacity-20 transition-all">
+                    Contact Me
+                </button>
+            </div>
+        </div>
+        <div class="scroll-indicator absolute bottom-10 left-1/2 transform -translate-x-1/2 float-animation">
+            <i class="fas fa-chevron-down text-2xl"></i>
+        </div>
+    </section>
+    
+    <!-- Section Separator -->
+    <div class="section-separator"></div>
+    
+    <!-- About Section -->
+    <section id="about" class="py-20 px-6 relative z-10">
+        <div class="max-w-6xl mx-auto">
+            <h2 class="font-space text-5xl font-bold text-center mb-16 fade-in gradient-text">
+                About Me <span class="wave-animation">👋</span>
+            </h2>
+            <div class="grid md:grid-cols-2 gap-12 items-center">
+                <div class="fade-in">
+                    <img src="https://picsum.photos/seed/profile/500/500" alt="Profile" class="rounded-2xl shadow-2xl hover:scale-105 transition-transform duration-500">
+                </div>
+                <div class="fade-in">
+                    <h3 class="text-3xl font-semibold mb-4">Hello, I'm a Passionate Developer</h3>
+                    <p class="text-gray-300 mb-6 leading-relaxed">
+                        With over 5 years of experience in web development, I specialize in creating 
+                        stunning, interactive websites that push the boundaries of what's possible on 
+                        the web. My expertise spans from modern JavaScript frameworks to cutting-edge 
+                        3D graphics and animations.
+                    </p>
+                    <p class="text-gray-300 mb-8 leading-relaxed">
+                        I believe in the power of technology to create meaningful connections and 
+                        unforgettable experiences. Every project I undertake is an opportunity to 
+                        innovate and inspire.
+                    </p>
+                    <div class="flex space-x-4">
+                        <a href="#" class="text-2xl hover:text-purple-400 transition-colors hover:scale-110 transform">
+                            <i class="fab fa-github"></i>
+                        </a>
+                        <a href="#" class="text-2xl hover:text-purple-400 transition-colors hover:scale-110 transform">
+                            <i class="fab fa-linkedin"></i>
+                        </a>
+                        <a href="#" class="text-2xl hover:text-purple-400 transition-colors hover:scale-110 transform">
+                            <i class="fab fa-twitter"></i>
+                        </a>
+                        <a href="#" class="text-2xl hover:text-purple-400 transition-colors hover:scale-110 transform">
+                            <i class="fab fa-dribbble"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Section Separator -->
+    <div class="section-separator"></div>
+    
+    <!-- Projects Section -->
+    <section id="projects" class="py-20 px-6 bg-gray-900 bg-opacity-50 relative z-10">
+        <div class="max-w-6xl mx-auto">
+            <h2 class="font-space text-5xl font-bold text-center mb-16 fade-in gradient-text">
+                Featured Projects
+            </h2>
+            <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <!-- Project Card 1 -->
+                <div class="card-3d h-80 fade-in tilt-effect">
+                    <div class="card-3d-inner relative w-full h-full">
+                        <div class="card-3d-front glass rounded-2xl p-6 flex flex-col justify-between">
+                            <div>
+                                <h3 class="text-2xl font-semibold mb-3">3D E-commerce Platform</h3>
+                                <p class="text-gray-300">Interactive shopping experience with 3D product visualization</p>
+                            </div>
+                            <div class="flex flex-wrap gap-2">
+                                <span class="px-3 py-1 bg-purple-600 bg-opacity-30 rounded-full text-sm">Three.js</span>
+                                <span class="px-3 py-1 bg-purple-600 bg-opacity-30 rounded-full text-sm">React</span>
+                                <span class="px-3 py-1 bg-purple-600 bg-opacity-30 rounded-full text-sm">WebGL</span>
+                            </div>
+                        </div>
+                        <div class="card-3d-back glass rounded-2xl p-6 flex flex-col justify-center items-center">
+                            <p class="text-center mb-4">Revolutionary 3D shopping experience with real-time product customization</p>
+                            <button class="px-6 py-2 bg-purple-600 rounded-full hover:bg-purple-700 transition-colors">
+                                View Details
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Project Card 2 -->
+                <div class="card-3d h-80 fade-in tilt-effect">
+                    <div class="card-3d-inner relative w-full h-full">
+                        <div class="card-3d-front glass rounded-2xl p-6 flex flex-col justify-between">
+                            <div>
+                                <h3 class="text-2xl font-semibold mb-3">AI-Powered Dashboard</h3>
+                                <p class="text-gray-300">Real-time data visualization with machine learning insights</p>
+                            </div>
+                            <div class="flex flex-wrap gap-2">
+                                <span class="px-3 py-1 bg-purple-600 bg-opacity-30 rounded-full text-sm">Vue.js</span>
+                                <span class="px-3 py-1 bg-purple-600 bg-opacity-30 rounded-full text-sm">D3.js</span>
+                                <span class="px-3 py-1 bg-purple-600 bg-opacity-30 rounded-full text-sm">TensorFlow</span>
+                            </div>
+                        </div>
+                        <div class="card-3d-back glass rounded-2xl p-6 flex flex-col justify-center items-center">
+                            <p class="text-center mb-4">Intelligent analytics platform with predictive modeling capabilities</p>
+                            <button class="px-6 py-2 bg-purple-600 rounded-full hover:bg-purple-700 transition-colors">
+                                View Details
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Project Card 3 -->
+                <div class="card-3d h-80 fade-in tilt-effect">
+                    <div class="card-3d-inner relative w-full h-full">
+                        <div class="card-3d-front glass rounded-2xl p-6 flex flex-col justify-between">
+                            <div>
+                                <h3 class="text-2xl font-semibold mb-3">Virtual Reality Gallery</h3>
+                                <p class="text-gray-300">Immersive art exhibition in WebVR</p>
+                            </div>
+                            <div class="flex flex-wrap gap-2">
+                                <span class="px-3 py-1 bg-purple-600 bg-opacity-30 rounded-full text-sm">A-Frame</span>
+                                <span class="px-3 py-1 bg-purple-600 bg-opacity-30 rounded-full text-sm">WebXR</span>
+                                <span class="px-3 py-1 bg-purple-600 bg-opacity-30 rounded-full text-sm">GLSL</span>
+                            </div>
+                        </div>
+                        <div class="card-3d-back glass rounded-2xl p-6 flex flex-col justify-center items-center">
+                            <p class="text-center mb-4">Step into a virtual world of art and creativity</p>
+                            <button class="px-6 py-2 bg-purple-600 rounded-full hover:bg-purple-700 transition-colors">
+                                View Details
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Section Separator -->
+    <div class="section-separator"></div>
+    
+    <!-- Skills Section -->
+    <section id="skills" class="py-20 px-6 relative z-10">
+        <div class="max-w-6xl mx-auto">
+            <h2 class="font-space text-5xl font-bold text-center mb-16 fade-in gradient-text">
+                Technical Skills
+            </h2>
+            <div class="grid md:grid-cols-2 gap-12">
+                <div class="fade-in">
+                    <h3 class="text-2xl font-semibold mb-8">Frontend Development</h3>
+                    <div class="space-y-6">
+                        <div class="skill-item">
+                            <div class="flex justify-between mb-2">
+                                <span>React / Next.js</span>
+                                <span>95%</span>
+                            </div>
+                            <div class="h-3 bg-gray-700 rounded-full overflow-hidden">
+                                <div class="skill-bar h-full bg-gradient-to-r from-purple-600 to-pink-600" data-width="95"></div>
+                            </div>
+                        </div>
+                        <div class="skill-item">
+                            <div class="flex justify-between mb-2">
+                                <span>Vue.js / Nuxt</span>
+                                <span>90%</span>
+                            </div>
+                            <div class="h-3 bg-gray-700 rounded-full overflow-hidden">
+                                <div class="skill-bar h-full bg-gradient-to-r from-purple-600 to-pink-600" data-width="90"></div>
+                            </div>
+                        </div>
+                        <div class="skill-item">
+                            <div class="flex justify-between mb-2">
+                                <span>Three.js / WebGL</span>
+                                <span>85%</span>
+                            </div>
+                            <div class="h-3 bg-gray-700 rounded-full overflow-hidden">
+                                <div class="skill-bar h-full bg-gradient-to-r from-purple-600 to-pink-600" data-width="85"></div>
+                            </div>
+                        </div>
+                        <div class="skill-item">
+                            <div class="flex justify-between mb-2">
+                                <span>TypeScript</span>
+                                <span>88%</span>
+                            </div>
+                            <div class="h-3 bg-gray-700 rounded-full overflow-hidden">
+                                <div class="skill-bar h-full bg-gradient-to-r from-purple-600 to-pink-600" data-width="88"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="fade-in">
+                    <h3 class="text-2xl font-semibold mb-8">Design & Tools</h3>
+                    <div class="space-y-6">
+                        <div class="skill-item">
+                            <div class="flex justify-between mb-2">
+                                <span>UI/UX Design</span>
+                                <span>92%</span>
+                            </div>
+                            <div class="h-3 bg-gray-700 rounded-full overflow-hidden">
+                                <div class="skill-bar h-full bg-gradient-to-r from-purple-600 to-pink-600" data-width="92"></div>
+                            </div>
+                        </div>
+                        <div class="skill-item">
+                            <div class="flex justify-between mb-2">
+                                <span>Figma / Adobe XD</span>
+                                <span>87%</span>
+                            </div>
+                            <div class="h-3 bg-gray-700 rounded-full overflow-hidden">
+                                <div class="skill-bar h-full bg-gradient-to-r from-purple-600 to-pink-600" data-width="87"></div>
+                            </div>
+                        </div>
+                        <div class="skill-item">
+                            <div class="flex justify-between mb-2">
+                                <span>Node.js / Express</span>
+                                <span>80%</span>
+                            </div>
+                            <div class="h-3 bg-gray-700 rounded-full overflow-hidden">
+                                <div class="skill-bar h-full bg-gradient-to-r from-purple-600 to-pink-600" data-width="80"></div>
+                            </div>
+                        </div>
+                        <div class="skill-item">
+                            <div class="flex justify-between mb-2">
+                                <span>GraphQL / Apollo</span>
+                                <span>83%</span>
+                            </div>
+                            <div class="h-3 bg-gray-700 rounded-full overflow-hidden">
+                                <div class="skill-bar h-full bg-gradient-to-r from-purple-600 to-pink-600" data-width="83"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 3D Skills Icons -->
+            <div class="mt-16 grid grid-cols-3 md:grid-cols-6 gap-8 fade-in">
+                <div class="text-center group float-icon">
+                    <div class="w-20 h-20 mx-auto mb-2 glass rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
+                        <i class="fab fa-react text-3xl text-blue-400"></i>
+                    </div>
+                    <span class="text-sm">React</span>
+                </div>
+                <div class="text-center group float-icon">
+                    <div class="w-20 h-20 mx-auto mb-2 glass rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
+                        <i class="fab fa-vuejs text-3xl text-green-400"></i>
+                    </div>
+                    <span class="text-sm">Vue</span>
+                </div>
+                <div class="text-center group float-icon">
+                    <div class="w-20 h-20 mx-auto mb-2 glass rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
+                        <i class="fab fa-js text-3xl text-yellow-400"></i>
+                    </div>
+                    <span class="text-sm">JavaScript</span>
+                </div>
+                <div class="text-center group float-icon">
+                    <div class="w-20 h-20 mx-auto mb-2 glass rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
+                        <i class="fab fa-node text-3xl text-green-600"></i>
+                    </div>
+                    <span class="text-sm">Node.js</span>
+                </div>
+                <div class="text-center group float-icon">
+                    <div class="w-20 h-20 mx-auto mb-2 glass rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
+                        <i class="fab fa-figma text-3xl text-purple-400"></i>
+                    </div>
+                    <span class="text-sm">Figma</span>
+                </div>
+                <div class="text-center group float-icon">
+                    <div class="w-20 h-20 mx-auto mb-2 glass rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
+                        <i class="fas fa-cube text-3xl text-pink-400"></i>
+                    </div>
+                    <span class="text-sm">Three.js</span>
+                </div>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Section Separator -->
+    <div class="section-separator"></div>
+    
+    <!-- Contact Section -->
+    <section id="contact" class="py-20 px-6 bg-gray-900 bg-opacity-50 relative z-10">
+        <div class="max-w-4xl mx-auto">
+            <h2 class="font-space text-5xl font-bold text-center mb-16 fade-in gradient-text">
+                Get In Touch
+            </h2>
+            <div class="grid md:grid-cols-2 gap-12">
+                <div class="fade-in">
+                    <h3 class="text-2xl font-semibold mb-6">Let's Create Something Amazing</h3>
+                    <p class="text-gray-300 mb-8">
+                        I'm always excited to work on new projects and collaborate with creative minds. 
+                        Whether you have a specific project in mind or just want to chat about technology, 
+                        feel free to reach out!
+                    </p>
+                    <div class="space-y-4">
+                        <div class="flex items-center space-x-4">
+                            <i class="fas fa-envelope text-purple-400 text-xl"></i>
+                            <span>hello@portfolio.com</span>
+                        </div>
+                        <div class="flex items-center space-x-4">
+                            <i class="fas fa-phone text-purple-400 text-xl"></i>
+                            <span>+1 (555) 123-4567</span>
+                        </div>
+                        <div class="flex items-center space-x-4">
+                            <i class="fas fa-map-marker-alt text-purple-400 text-xl"></i>
+                            <span>San Francisco, CA</span>
+                        </div>
+                    </div>
+                </div>
+                <form id="contact-form" class="fade-in space-y-6">
+                    <div>
+                        <input type="text" id="name" placeholder="Your Name" required
+                               class="w-full px-4 py-3 bg-gray-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-600 transition-all">
+                    </div>
+                    <div>
+                        <input type="email" id="email" placeholder="Your Email" required
+                               class="w-full px-4 py-3 bg-gray-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-600 transition-all">
+                    </div>
+                    <div>
+                        <textarea id="message" placeholder="Your Message" rows="5" required
+                                  class="w-full px-4 py-3 bg-gray-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-600 transition-all resize-none"></textarea>
+                    </div>
+                    <button type="submit" 
+                            class="w-full py-3 bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg font-semibold hover:scale-105 transition-transform">
+                        Send Message
+                    </button>
+                </form>
+            </div>
+        </div>
+    </section>
+    
+    <!-- Footer -->
+    <footer class="py-8 px-6 border-t border-gray-800 relative z-10">
+        <div class="max-w-6xl mx-auto text-center">
+            <p class="text-gray-400">© 2024 Creative Developer. All rights reserved.</p>
+            <p class="text-gray-500 text-sm mt-2">Crafted with passion and cutting-edge technology</p>
+        </div>
+    </footer>
+    
+    <script>
+        // Theme toggle functionality
+        const themeToggle = document.getElementById('theme-toggle');
+        const themeToggleMobile = document.getElementById('theme-toggle-mobile');
+        const body = document.body;
+        
+        // Check for saved theme preference or default to dark mode
+        const currentTheme = localStorage.getItem('theme') || 'dark';
+        if (currentTheme === 'light') {
+            body.classList.add('light-mode');
+        }
+        
+        // Function to toggle theme
+        function toggleTheme() {
+            body.classList.toggle('light-mode');
+            
+            // Save theme preference
+            const theme = body.classList.contains('light-mode') ? 'light' : 'dark';
+            localStorage.setItem('theme', theme);
+            
+            // Update Three.js colors
+            updateThreeJSTheme();
+        }
+        
+        // Add event listeners to theme toggles
+        themeToggle.addEventListener('click', toggleTheme);
+        themeToggleMobile.addEventListener('click', toggleTheme);
+        
+        // Loading screen
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                document.getElementById('loading-screen').classList.add('hidden');
+            }, 1500);
+        });
+        
+        // Three.js 3D Background Animation
+        let scene, camera, renderer, particles, shapes, grid;
+        
+        function initThreeJS() {
+            scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            renderer = new THREE.WebGLRenderer({ alpha: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            document.getElementById('canvas-container').appendChild(renderer.domElement);
+            
+            // Create particles
+            const particlesGeometry = new THREE.BufferGeometry();
+            const particlesCount = 5000;
+            const posArray = new Float32Array(particlesCount * 3);
+            
+            for(let i = 0; i < particlesCount * 3; i++) {
+                posArray[i] = (Math.random() - 0.5) * 10;
+            }
+            
+            particlesGeometry.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
+            
+            const particlesMaterial = new THREE.PointsMaterial({
+                size: 0.005,
+                color: getComputedStyle(document.documentElement).getPropertyValue('--particle-color'),
+                transparent: true,
+                opacity: 0.8,
+                blending: THREE.AdditiveBlending
+            });
+            
+            particles = new THREE.Points(particlesGeometry, particlesMaterial);
+            scene.add(particles);
+            
+            // Create rotating shapes
+            shapes = new THREE.Group();
+            
+            // Create multiple shapes
+            for(let i = 0; i < 5; i++) {
+                const geometry = new THREE.IcosahedronGeometry(0.5, 0);
+                const material = new THREE.MeshBasicMaterial({
+                    color: new THREE.Color().setHSL(i / 5, 0.7, 0.5),
+                    wireframe: true
+                });
+                const shape = new THREE.Mesh(geometry, material);
+                shape.position.set(
+                    (Math.random() - 0.5) * 8,
+                    (Math.random() - 0.5) * 8,
+                    (Math.random() - 0.5) * 8
+                );
+                shape.rotation.set(
+                    Math.random() * Math.PI,
+                    Math.random() * Math.PI,
+                    Math.random() * Math.PI
+                );
+                shapes.add(shape);
+            }
+            
+            scene.add(shapes);
+            
+            // Create dynamic grid
+            const gridGeometry = new THREE.PlaneGeometry(20, 20, 20, 20);
+            const gridMaterial = new THREE.MeshBasicMaterial({
+                color: getComputedStyle(document.documentElement).getPropertyValue('--grid-color'),
+                wireframe: true,
+                transparent: true,
+                opacity: 0.1
+            });
+            grid = new THREE.Mesh(gridGeometry, gridMaterial);
+            grid.rotation.x = Math.PI / 2;
+            grid.position.y = -3;
+            scene.add(grid);
+            
+            camera.position.z = 5;
+            
+            animate();
+        }
+        
+        // Update Three.js theme colors
+        function updateThreeJSTheme() {
+            if (particles) {
+                particles.material.color.set(getComputedStyle(document.documentElement).getPropertyValue('--particle-color'));
+            }
+            if (grid) {
+                grid.material.color.set(getComputedStyle(document.documentElement).getPropertyValue('--grid-color'));
+            }
+        }
+        
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            // Rotate particles
+            particles.rotation.y += 0.0005;
+            particles.rotation.x += 0.0002;
+            
+            // Rotate shapes
+            shapes.children.forEach((shape, index) => {
+                shape.rotation.x += 0.01 * (index + 1);
+                shape.rotation.y += 0.01 * (index + 1);
+                shape.position.y += Math.sin(Date.now() * 0.001 + index) * 0.001;
+            });
+            
+            // Animate grid
+            const time = Date.now() * 0.001;
+            const positions = grid.geometry.attributes.position;
+            
+            for (let i = 0; i < positions.count; i++) {
+                const x = positions.getX(i);
+                const y = positions.getY(i);
+                const z = Math.sin(x * 0.5 + time) * Math.cos(y * 0.5 + time) * 0.5;
+                positions.setZ(i, z);
+            }
+            
+            positions.needsUpdate = true;
+            
+            renderer.render(scene, camera);
+        }
+        
+        // Handle window resize
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+        
+        // Initialize Three.js
+        initThreeJS();
+        
+        // Smooth scrolling
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+                
+                // Close mobile menu if open
+                document.getElementById('mobile-menu').classList.add('hidden');
+            });
+        });
+        
+        // Mobile menu toggle
+        document.getElementById('mobile-menu-btn').addEventListener('click', () => {
+            document.getElementById('mobile-menu').classList.toggle('hidden');
+        });
+        
+        // Intersection Observer for fade-in animations
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -100px 0px'
+        };
+        
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                    
+                    // Animate skill bars
+                    const skillBars = entry.target.querySelectorAll('.skill-bar');
+                    skillBars.forEach(bar => {
+                        const width = bar.getAttribute('data-width');
+                        setTimeout(() => {
+                            bar.style.width = width + '%';
+                            bar.classList.add('animate');
+                        }, 200);
+                    });
+                }
+            });
+        }, observerOptions);
+        
+        // Observe all fade-in elements
+        document.querySelectorAll('.fade-in').forEach(el => {
+            observer.observe(el);
+        });
+        
+        // Form submission with validation
+        document.getElementById('contact-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            // Get form fields
+            const name = document.getElementById('name');
+            const email = document.getElementById('email');
+            const message = document.getElementById('message');
+            
+            // Basic validation
+            let isValid = true;
+            
+            if (name.value.trim() === '') {
+                name.classList.add('shake');
+                isValid = false;
+                setTimeout(() => name.classList.remove('shake'), 500);
+            }
+            
+            if (email.value.trim() === '' || !email.value.includes('@')) {
+                email.classList.add('shake');
+                isValid = false;
+                setTimeout(() => email.classList.remove('shake'), 500);
+            }
+            
+            if (message.value.trim() === '') {
+                message.classList.add('shake');
+                isValid = false;
+                setTimeout(() => message.classList.remove('shake'), 500);
+            }
+            
+            if (isValid) {
+                // Create success message
+                const successMessage = document.createElement('div');
+                successMessage.className = 'fixed top-20 right-6 glass px-6 py-3 rounded-lg text-green-400 z-50';
+                successMessage.innerHTML = '<i class="fas fa-check-circle mr-2"></i>Message sent successfully!';
+                document.body.appendChild(successMessage);
+                
+                // Remove message after 3 seconds
+                setTimeout(() => {
+                    successMessage.remove();
+                }, 3000);
+                
+                // Reset form
+                e.target.reset();
+            }
+        });
+        
+        // Fixed parallax effect - only apply to hero background, not content
+        window.addEventListener('scroll', () => {
+            const scrolled = window.pageYOffset;
+            const heroSection = document.querySelector('#hero');
+            
+            // Only apply parallax to the background, not the content
+            if (heroSection && scrolled < window.innerHeight) {
+                // Move the background at a different speed than the content
+                const parallaxSpeed = 0.5;
+                const yPos = -(scrolled * parallaxSpeed);
+                
+                // Apply the parallax effect to the canvas container instead of the hero section
+                const canvasContainer = document.getElementById('canvas-container');
+                if (canvasContainer) {
+                    canvasContainer.style.transform = `translateY(${yPos}px)`;
+                }
+            }
+        });
+        
+        // Dynamic cursor effect with particle trail
+        const cursor = document.createElement('div');
+        cursor.className = 'fixed w-4 h-4 bg-purple-500 rounded-full pointer-events-none z-50 transition-transform duration-100';
+        cursor.style.opacity = '0.5';
+        document.body.appendChild(cursor);
+        
+        // Create particle trail
+        function createParticle(x, y) {
+            const particle = document.createElement('div');
+            particle.className = 'particle';
+            
+            // Random size between 2px and 6px
+            const size = Math.random() * 4 + 2;
+            particle.style.width = `${size}px`;
+            particle.style.height = `${size}px`;
+            
+            // Random direction
+            const angle = Math.random() * Math.PI * 2;
+            const distance = Math.random() * 50 + 20;
+            const tx = Math.cos(angle) * distance;
+            const ty = Math.sin(angle) * distance;
+            
+            particle.style.left = `${x}px`;
+            particle.style.top = `${y}px`;
+            particle.style.setProperty('--tx', `${tx}px`);
+            particle.style.setProperty('--ty', `${ty}px`);
+            
+            document.body.appendChild(particle);
+            
+            // Remove particle after animation completes
+            setTimeout(() => {
+                particle.remove();
+            }, 1000);
+        }
+        
+        let mouseX = 0, mouseY = 0;
+        let isMoving = false;
+        let moveTimeout;
+        
+        document.addEventListener('mousemove', (e) => {
+            mouseX = e.clientX;
+            mouseY = e.clientY;
+            
+            cursor.style.left = mouseX - 8 + 'px';
+            cursor.style.top = mouseY - 8 + 'px';
+            
+            // Create particle trail
+            if (Math.random() > 0.8) {
+                createParticle(mouseX, mouseY);
+            }
+            
+            // Set moving flag
+            isMoving = true;
+            clearTimeout(moveTimeout);
+            moveTimeout = setTimeout(() => {
+                isMoving = false;
+            }, 100);
+        });
+        
+        // Hide cursor on mobile
+        if (window.innerWidth < 768) {
+            cursor.style.display = 'none';
+        }
+        
+        // Tilt effect for project cards
+        document.querySelectorAll('.tilt-effect').forEach(card => {
+            card.addEventListener('mousemove', (e) => {
+                const rect = card.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                
+                const centerX = rect.width / 2;
+                const centerY = rect.height / 2;
+                
+                const rotateX = (y - centerY) / 10;
+                const rotateY = (centerX - x) / 10;
+                
+                card.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale3d(1.05, 1.05, 1.05)`;
+            });
+            
+            card.addEventListener('mouseleave', () => {
+                card.style.transform = 'perspective(1000px) rotateX(0) rotateY(0) scale3d(1, 1, 1)';
+            });
+        });
+        
+        // Add interactive hover effect to social links
+        document.querySelectorAll('a[href^="#"]').forEach(link => {
+            link.addEventListener('mouseenter', () => {
+                link.style.transform = 'scale(1.1)';
+            });
+            
+            link.addEventListener('mouseleave', () => {
+                link.style.transform = 'scale(1)';
+            });
+        });
+    </script>
+</body>
+</html>
